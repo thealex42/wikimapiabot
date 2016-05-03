@@ -15,3 +15,9 @@ docker run -it --name wikimapiabot wikimapiabot
 **2) Go**
 
 go get; go build; ./wikimapiabot
+
+
+**TODO**
+
+* tests
+* use goroutines pool in main loop
