@@ -1,0 +1,13 @@
+{
+    "ru": {
+        "default": {
+            "No places found": "Не могу найти объектов поблизости",
+			"Something went wrong": "Что-то пошло не так",
+			"Can't load place information'": "Не могу загрузить информацию об этом месте",
+			"Choose place or share your location": "Выберите место или укажите ваше местоположение",
+			"Choose language": "Выберите язык",
+			"Please share your location": "Укажите ваше местоположение",
+			"Share location": "Отправить координаты"
+        }
+    }
+}
