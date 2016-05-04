@@ -2,7 +2,7 @@
 
 Telegram bot for Wikimapia
 
-See it in action: tg://wikimapia_bot
+** See it in action: @wikimapia_bot (telegram) ** 
 
 Build and run
 
