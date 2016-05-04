@@ -2,6 +2,8 @@
 
 Telegram bot for Wikimapia
 
+See it in action: tg://wikimapia_bot
+
 Build and run
 
 Before running edit wikimapiabot.go and set wikimapia and telegram api keys
