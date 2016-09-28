@@ -15,6 +15,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/ainar-g/i"
+	"github.com/botanio/sdk/go"
 	emoji "github.com/kyokomi/emoji"
 	lediscfg "github.com/siddontang/ledisdb/config"
 	"github.com/siddontang/ledisdb/ledis"
@@ -26,15 +27,19 @@ import (
 type config struct {
 	ApiKey   string `env:"API_KEY" envDefault:""`
 	MapiaKey string `env:"WIKIMAPIA_KEY" envDefault:""`
+	BotanKey string `env:"BOTAN_KEY" envDefault:""`
 }
 
 var (
-	loggerError = log.New()
+	loggerError     = log.New()
+	loggerLocations = log.New()
 
 	cfg   config
 	bot   *telebot.Bot
 	mapia *Mapia
 	db    *ledis.DB
+
+	botanStat botan.Botan
 
 	state map[int64]*MapiaPlaces // Keeps current state per chat users
 )
@@ -53,6 +58,11 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(logfd)
 
+	logLocFd, err := os.OpenFile("logs/loc.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	panicOnError(err)
+	loggerLocations.Formatter = &log.JSONFormatter{}
+	loggerLocations.Out = logLocFd
+
 	i.LoadJSON("i18n/ru.json")
 
 	mapia = NewMapia(cfg.MapiaKey)
@@ -69,6 +79,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	botanStat = botan.New(cfg.BotanKey)
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
@@ -105,6 +117,15 @@ func main() {
 					update.Message.Location.Longitude,
 					getChatLocale(update.Message.Chat.ID))
 
+				loggerLocations.WithFields(log.Fields{
+					"lat":    update.Message.Location.Latitude,
+					"lon":    update.Message.Location.Longitude,
+					"userid": update.Message.Chat.ID,
+					"nick":   update.Message.Chat.UserName,
+					"fname":  update.Message.Chat.FirstName,
+					"lname":  update.Message.Chat.LastName,
+				}).Info("Location")
+
 				if err != nil || places.Count == 0 {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, translate("No places found", update.Message.Chat.ID))
 					bot.Send(msg)
@@ -118,6 +139,10 @@ func main() {
 
 				bot.Send(msg)
 
+				go func() {
+					botanStat.Track(update.Message.From.ID, nil, "location")
+				}()
+
 				return
 			}
 
@@ -126,6 +151,10 @@ func main() {
 				if buttonPressed, hasButton := emojiMapReverse[update.Message.Text]; hasButton {
 
 					fmt.Println("Loading!", buttonPressed)
+
+					go func() {
+						botanStat.Track(update.Message.From.ID, nil, "place")
+					}()
 
 					if buttonPressed <= 0 || buttonPressed-1 > len(userState.Places) {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
